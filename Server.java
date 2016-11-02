@@ -34,7 +34,6 @@ class Group {
 
 public class Server {
   private static Send sender;
-  private static Processor processor;
   private static ArrayList<User> users = new ArrayList<>();
   private static ArrayList<Group> groups = new ArrayList<>();
 

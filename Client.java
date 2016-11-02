@@ -6,6 +6,7 @@ import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Envelope;
 import java.util.Scanner;
+import java.util.ArrayList;
 
 public class Client {
 	private final static String SERVER_QUEUE_NAME = "serverQueue";
@@ -15,6 +16,7 @@ public class Client {
 	private String password;
 	private Send sender;
 	private boolean on = true;
+	private ArrayList<String> groups = new ArrayList<String>();
 
 	public Client() throws java.io.IOException, java.util.concurrent.TimeoutException {
 		this.sender = new Send();
@@ -32,7 +34,7 @@ public class Client {
 		while(on) {
 	        String input;
 	        input = in.nextLine();
-	        process(input);
+	        processInput(input);
 		}
 	}
 
@@ -50,13 +52,14 @@ public class Client {
 			public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws java.io.IOException {
 				String message = new String(body, "UTF-8");
 				System.out.println(" [x] Received '" + message + "'");
+				processMessage(message);
 			}
 	    };
 
 	    channel.basicConsume(username, true, consumer);
 	}
 
-	private void process(String command) throws java.io.IOException, java.util.concurrent.TimeoutException {
+	private void processInput(String command) throws java.io.IOException, java.util.concurrent.TimeoutException {
 		String[] splittedCommand = command.split("\\s+", 2);
 		String payload;
 		String targetUser;
@@ -121,14 +124,50 @@ public class Client {
 					System.out.print("Please input a valid group name: ");
 					targetGroup = in.nextLine();
 				}
-				
+
 				this.sender.send(this.username + " " + "leave" + " " + targetGroup, SERVER_QUEUE_NAME);
+				break;
+			case "friend" :
+				targetUser = splittedCommand[1];
+				this.sender.send(this.username + " " + "friend" + " " + targetUser, SERVER_QUEUE_NAME);
+				break;
+			case "list" :
+				String type = splittedCommand[1];
+				if (type.equals("friend")) {
+					this.sender.send(this.username + " " + "list", SERVER_QUEUE_NAME);
+				}
+				else {
+					if (type.equals("group")) {
+						for (String s : groups) {
+							System.out.println(s);
+						}
+					}
+				}
 				break;
 			case "exit" :
 				this.on = false;
 				break;
 			default :
 				System.out.println("Command not recognized");
+				break;
+		}
+	}
+
+	private void processMessage(String message) {
+		String[] splittedMessage = message.split("\\s+");
+		String groupName;
+		switch (splittedMessage[0]) {
+			case "joined" :
+				groupName = splittedMessage[1];
+				System.out.println("You have joined " + groupName);
+				groups.add(groupName);
+				break;
+			case "left" :
+				groupName = splittedMessage[1];
+				System.out.println("You have left " + groupName);
+				groups.remove(groupName);
+				break;
+			default :
 				break;
 		}
 	}
