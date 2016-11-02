@@ -9,6 +9,8 @@ import java.util.Scanner;
 
 public class Client {
 	private final static String SERVER_QUEUE_NAME = "serverQueue";
+	private final static String REGISTER_QUEUE_NAME = "registerQueue";
+	private final static String LOGIN_QUEUE_NAME = "loginQueue";
 	private String username;
 	private String password;
 	private Send sender;
@@ -56,20 +58,71 @@ public class Client {
 
 	private void process(String command) throws java.io.IOException, java.util.concurrent.TimeoutException {
 		String[] splittedCommand = command.split("\\s+", 2);
+		String payload;
+		String targetUser;
+		String targetGroup;
+		Scanner in = new Scanner(System.in);
 		switch (splittedCommand[0]) {
 			case "register" : 
-				this.sender.send(this.username + " " + this.password, "registerQueue");
+				this.sender.send(this.username + " " + this.password, REGISTER_QUEUE_NAME);
 				break;
 			case "login" :
-				this.sender.send(this.username + " " + this.password, "loginQueue");
+				this.sender.send(this.username + " " + this.password, LOGIN_QUEUE_NAME);
 				break;
 			case "send" :
-				String payload = splittedCommand[1];
-				String target;
+				payload = splittedCommand[1];
 				System.out.print("To: ");
-				Scanner in = new Scanner(System.in);
-				target = in.nextLine();
-				this.sender.send(target + " " + payload, SERVER_QUEUE_NAME);
+				targetUser = in.nextLine();
+				
+				while(!validateInput(targetUser)) {
+					System.out.println("Username cannot contain any space");
+					System.out.print("To: ");
+					targetUser = in.nextLine();
+				}
+
+				this.sender.send(this.username + " " + "send" + " " + targetUser + " " + payload, SERVER_QUEUE_NAME);
+				break;
+			case "create" :
+				String groupName = splittedCommand[1];
+				
+				while(!validateInput(groupName)) {
+					System.out.println("Group name cannot contain any space");
+					System.out.print("Please input your group name: ");
+					groupName = in.nextLine();
+				}
+
+				this.sender.send(this.username + " " + "create" + " " + groupName, SERVER_QUEUE_NAME);
+				break;
+			case "add" :
+				targetUser = splittedCommand[1];
+
+				while(!validateInput(targetUser)) {
+					System.out.println("Username cannot contain any space");
+					System.out.print("Please input a valid username: ");
+					targetUser = in.nextLine();
+				}
+
+				System.out.print("To Group: ");
+				targetGroup = in.nextLine();
+				
+				while(!validateInput(targetGroup)) {
+					System.out.println("Group name cannot contain any space");
+					System.out.print("Please input a valid group name: ");
+					targetGroup = in.nextLine();
+				}
+
+				this.sender.send(this.username + " " + "add" + " " + targetGroup + " " + targetUser, SERVER_QUEUE_NAME);
+				break;
+			case "leave" :
+				targetGroup = splittedCommand[1];
+				
+				while(!validateInput(targetGroup)) {
+					System.out.println("Group name cannot contain any space");
+					System.out.print("Please input a valid group name: ");
+					targetGroup = in.nextLine();
+				}
+				
+				this.sender.send(this.username + " " + "leave" + " " + targetGroup, SERVER_QUEUE_NAME);
 				break;
 			case "exit" :
 				this.on = false;
@@ -77,6 +130,16 @@ public class Client {
 			default :
 				System.out.println("Command not recognized");
 				break;
+		}
+	}
+
+	private boolean validateInput(String input) {
+		String[] inputArray = input.split("\\s+");
+		if (inputArray.length == 1) {
+			return true;
+		}
+		else {
+			return false;
 		}
 	}
 
