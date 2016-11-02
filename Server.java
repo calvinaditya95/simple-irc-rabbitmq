@@ -13,10 +13,12 @@ import java.util.ArrayList;
 class User {
   public String username;
   public String password;
+  public ArrayList<User> friends;
 
   public User(String username, String password) {
     this.username = username;
     this.password = password;
+    friends = new ArrayList<>();
     System.out.println("Registered user: " + username);
   }
 }
@@ -69,6 +71,7 @@ public class Server {
           // message[1] = command
           // message[2..n] = arguments
 
+          // user creating a group
           if (message[1].equals("create")) {
             Group temp = new Group(message[2]);
             for (User u : users) {
@@ -79,6 +82,7 @@ public class Server {
             }
             groups.add(temp);
           }
+          // adding a user to group
           else if (message[1].equals("add")) {
             Group temp;
 
@@ -99,6 +103,7 @@ public class Server {
               }
             }
           }
+          // user leaving a group
           else if (message[1].equals("leave")) {
             Group temp;
             User toBeRemoved;
@@ -117,6 +122,44 @@ public class Server {
               }
             }
           }
+          // adding a friend
+          else if (message[1].equals("friend")) {
+            User temp;
+
+            for (User u : users) {
+              if (u.username.equals(message[0])) {
+                temp = u;
+
+                for (User u2 : users) {
+                  if (u2.username.equals(message[2])) {
+                    temp.friends.add(u2);
+                    u2.friends.add(temp);
+                    sender.send("befriend " + u2.username, message[0]);
+                    sender.send("befriend " + temp.username, message[2]);
+                    break;
+                  }
+                }
+
+                break;
+              }
+            }
+          }
+          // show friend list
+          else if (message[1].equals("list")) {
+            for (User u : users) {
+              if (u.username.equals(message[0])) {
+                String list = "friends:";
+
+                for (User u2 : u.friends) {
+                  list += " " + u2.username;
+                }
+                sender.send(list, message[0]);
+
+                break;
+              }
+            }
+          }
+          // private message
           else if (message[1].equals("send")) {
             sender.send(message[3], message[2]);
           }
