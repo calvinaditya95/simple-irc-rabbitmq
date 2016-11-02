@@ -55,7 +55,7 @@ public class Client {
 	}
 
 	private void process(String command) throws java.io.IOException, java.util.concurrent.TimeoutException {
-		String[] splittedCommand = command.split("\\s+");
+		String[] splittedCommand = command.split("\\s+", 2);
 		switch (splittedCommand[0]) {
 			case "register" : 
 				this.sender.send(this.username + " " + this.password, "registerQueue");
@@ -64,7 +64,12 @@ public class Client {
 				this.sender.send(this.username + " " + this.password, "loginQueue");
 				break;
 			case "send" :
-				this.sender.send(splittedCommand[1], SERVER_QUEUE_NAME);
+				String payload = splittedCommand[1];
+				String target;
+				System.out.print("To: ");
+				Scanner in = new Scanner(System.in);
+				target = in.nextLine();
+				this.sender.send(target + " " + payload, SERVER_QUEUE_NAME);
 				break;
 			case "exit" :
 				this.on = false;
