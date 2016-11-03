@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.lang.InterruptedException;
 import java.util.concurrent.TimeoutException;
 import java.util.ArrayList;
+import java.sql.*;
 
 class User {
   public String username;
@@ -73,13 +74,70 @@ public class Server {
   private static Send sender;
   private static ArrayList<User> users = new ArrayList<>();
   private static ArrayList<Group> groups = new ArrayList<>();
+  private static DBConnection dbConn = new DBConnection();
+  private static Connection conn;
 
   private static String SERVER = "serverQueue";
   private static String REGISTER = "registerQueue";
 
+  public Server() {
+    dbConn.init();
+    conn = dbConn.getConnection();
+  }
+
   public static void register(String username, String password, Channel channel) {
-    User temp = new User(username, password, channel);
-    users.add(temp);
+    Statement stmt = conn.createStatement();
+    String sql = "SELECT COUNT(*) as n FROM account WHERE username = " + username;
+    ResultSet rs = stmt.executeQuery(sql);
+    int n = -1;
+
+    while(rs.next()) {
+      n = rs.getInt("n");
+    }
+
+    if (n > 0) {
+      String message = "Failed";
+      channel.basicPublish("", username, null, message.getBytes());
+    }
+    else if (n == 0) {
+      sql = "INSERT INTO account(username, password) VALUES (" + username + ", " + password + ")";
+
+      if (stmt.executeUpdate(sql)) {
+        User temp = new User(username, password, channel);
+        users.add(temp);
+        System.out.println("Registered new user: " + username);
+
+        String message = "Success";
+        channel.basicPublish("", username, null, message.getBytes()); 
+      }
+    }
+    else {
+      System.out.println("Registration error");
+    }
+
+    conn.close();
+  }
+
+  public static void login(String username, String password, Channel channel) {
+    Statement stmt = conn.createStatement();
+    String sql = "SELECT COUNT(*) as n FROM account WHERE username = " + username + " AND password = " + password;
+    ResultSet rs = stmt.executeQuery(sql);
+    int n = 0;
+
+    while(rs.next()) {
+      n = rs.getInt("n");
+    }
+
+    if (n > 0) {
+      String message = "Success";
+      channel.basicPublish("", username, null, message.getBytes());
+    }
+    else {
+      String message = "Failed";
+      channel.basicPublish("", username, null, message.getBytes());
+    }
+
+    conn.close();
   }
 
   public static void main(String[] args) {
