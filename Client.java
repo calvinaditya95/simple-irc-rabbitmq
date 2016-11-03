@@ -32,6 +32,8 @@ public class Client {
 
         startReceive();
 
+        helpMessage();
+
 		while(on) {
 	        String input;
 	        input = in.nextLine();
@@ -73,18 +75,33 @@ public class Client {
 			case "login" :
 				this.sender.send(this.username + " " + this.password, LOGIN_QUEUE_NAME);
 				break;
-			case "send" :
-				payload = splittedCommand[1];
-				System.out.print("To: ");
-				targetUser = in.nextLine();
+			case "chat" :
+				boolean startChat = false;
+				targetUser = splittedCommand[1];
 				
 				while(!validateInput(targetUser)) {
 					System.out.println("Username cannot contain any space");
-					System.out.print("To: ");
+					System.out.print("Chat With: ");
 					targetUser = in.nextLine();
 				}
 
-				this.sender.send(this.username + " " + "send" + " " + targetUser + " " + payload, SERVER_QUEUE_NAME);
+				System.out.println("You are now chatting with: " + targetUser);
+				System.out.println("-exit to stop chatting");
+				System.out.println();
+				this.target = targetUser;
+				startChat = true;
+
+				while(startChat) {
+					payload = in.nextLine();
+					if (payload.equals("-exit")) {
+						System.out.println("No longer chatting with: " + this.target);
+						this.target = "home";
+						startChat = false;
+					}
+					else
+						this.sender.send(this.username + " " + "send" + " " + this.target + " " + payload, SERVER_QUEUE_NAME);
+				}
+
 				break;
 			case "create" :
 				String groupName = splittedCommand[1];
@@ -95,6 +112,7 @@ public class Client {
 					groupName = in.nextLine();
 				}
 
+				groups.add(groupName);
 				this.sender.send(this.username + " " + "create" + " " + groupName, SERVER_QUEUE_NAME);
 				break;
 			case "add" :
@@ -146,7 +164,7 @@ public class Client {
 				}
 				break;
 			case "enter" :
-				boolean startChat = false;
+				startChat = false;
 				targetGroup = splittedCommand[1];
 				
 				while (!validateInput(targetGroup)) {
@@ -158,6 +176,8 @@ public class Client {
 				if (groups.contains(targetGroup)) {
 					this.target = targetGroup;
 					System.out.println("You are now sending messages to group: " + this.target);
+					System.out.println("-exit to stop chatting");
+					System.out.println();
 					startChat = true;
 				}
 				else {
@@ -167,6 +187,7 @@ public class Client {
 				while(startChat) {
 					payload = in.nextLine();
 					if (payload.equals("-exit")) {
+						System.out.println("You left " + this.target + " chatroom");
 						this.target = "home";
 						startChat = false;
 					}
@@ -178,10 +199,25 @@ public class Client {
 			case "exit" :
 				this.on = false;
 				break;
+			case "help" :
+				helpMessage();
 			default :
 				System.out.println("Command not recognized");
 				break;
 		}
+	}
+
+	private void helpMessage() {
+		System.out.println("Available commands:");
+		System.out.println("register \t\t untuk meregister user");
+		System.out.println("login \t\t untuk login user");
+		System.out.println("chat <username> \t\t untuk memulai mengirim chat ke <username>");
+		System.out.println("create <group-name> \t\t untuk membuat sebuah grup baru");
+		System.out.println("enter <group-name> \t\t untuk memulai mengirim chat ke <group-name>");
+		System.out.println("add <username> \t\t untuk memasukkan <username> ke suatu grup");
+		System.out.println("leave <group-name> \t\t untuk meninggalkan grup <group-name>");
+		System.out.println("friend <username> \t\t untuk menambah teman");
+		System.out.println();
 	}
 
 	private void processMessage(String message) {
