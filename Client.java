@@ -14,6 +14,7 @@ public class Client {
 	private final static String LOGIN_QUEUE_NAME = "loginQueue";
 	private String username;
 	private String password;
+	private String target = "home";
 	private Send sender;
 	private boolean on = true;
 	private ArrayList<String> groups = new ArrayList<String>();
@@ -141,6 +142,36 @@ public class Client {
 						for (String s : groups) {
 							System.out.println(s);
 						}
+					}
+				}
+				break;
+			case "enter" :
+				boolean startChat = false;
+				targetGroup = splittedCommand[1];
+				
+				while (!validateInput(targetGroup)) {
+					System.out.println("Group name cannot contain any space");
+					System.out.print("Please input a valid group name: ");
+					targetGroup = in.nextLine();
+				}
+				
+				if (groups.contains(targetGroup)) {
+					this.target = targetGroup;
+					System.out.println("You are now sending messages to group: " + this.target);
+					startChat = true;
+				}
+				else {
+					System.out.println("You are not a part of that group!");
+				}
+
+				while(startChat) {
+					payload = in.nextLine();
+					if (payload.equals("-exit")) {
+						this.target = "home";
+						startChat = false;
+					}
+					else {
+						this.sender.send(this.username + " " + "broadcast" + " " + this.target + " " + payload, SERVER_QUEUE_NAME);
 					}
 				}
 				break;
