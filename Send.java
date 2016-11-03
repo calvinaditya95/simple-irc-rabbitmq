@@ -18,7 +18,11 @@ public class Send implements Runnable {
 		this.channel.queueDeclare(queue_name, false, false, false, null);
 		String message = payload;
 		channel.basicPublish("", queue_name, null, message.getBytes());
-		System.out.println(" [x] Sent '" + message + "'");
+	}
+
+	public void sendToGroup(String payload, String exchange_name) throws java.io.IOException {
+		String message = payload;
+		channel.basicPublish(exchange_name, "info", null, message.getBytes());
 	}
 
 	@Override

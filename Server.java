@@ -26,11 +26,37 @@ class User {
 class Group {
   public String name;
   public ArrayList<User> members;
+  public Channel channel;
 
-  public Group(String name) {
+  public Group(String name, Channel channel) {
     this.name = name;
     members = new ArrayList<>();
+    
+    this.channel = channel;
+
+    try {
+      channel.exchangeDeclare(name, "direct");
+    }
+    catch (IOException e) {
+      System.out.println(e);
+    }
+
     System.out.println("Created group: " + this.name);
+  }
+
+  public void addUser(User u) {
+    members.add(u);
+    
+    try {
+      channel.queueBind(u.username, name, "group");
+    }
+    catch(IOException e) {
+      System.out.println(e);
+    }
+  }
+
+  public void removeUser(User u) {
+    members.remove(u);
   }
 }
 
@@ -73,10 +99,10 @@ public class Server {
 
           // user creating a group
           if (message[1].equals("create")) {
-            Group temp = new Group(message[2]);
+            Group temp = new Group(message[2], channel);
             for (User u : users) {
               if (u.username.equals(message[0])) {
-                temp.members.add(u);
+                temp.addUser(u);
                 break;
               }
             }
@@ -92,7 +118,7 @@ public class Server {
 
                 for (User u : users) {
                   if (u.username.equals(message[3])) {
-                    temp.members.add(u);
+                    temp.addUser(u);
                     sender.send("Added " + u.username + " to " + temp.name, message[0]);
                     sender.send("joined " + temp.name, message[3]);
                     break;
@@ -113,7 +139,7 @@ public class Server {
 
                 for (User u : g.members) {
                   if (u.username.equals(message[0])) {
-                    g.members.remove(u);
+                    g.removeUser(u);
                     sender.send("left " + g.name, message[0]);
                     break;
                   }
@@ -161,7 +187,11 @@ public class Server {
           }
           // private message
           else if (message[1].equals("send")) {
-            sender.send(message[3], message[2]);
+            sender.send(message[0] + message[3], message[2]);
+          }
+          // group message
+          else if (message[1].equals("broadcast")) {
+            sender.sendToGroup(message[2] + " " + message[0] + " " + message[3], message[2]);
           }
         }
       };
