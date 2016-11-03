@@ -170,7 +170,7 @@ public class Server {
                     temp.friends.add(u2);
                     u2.friends.add(temp);
                     sender.send("Added " + u2.username + " as friend", message[0]);
-                    sender.send("Added " + temp.username + "as friend", message[2]);
+                    sender.send("Added " + temp.username + " as friend", message[2]);
                     break;
                   }
                 }
@@ -183,7 +183,7 @@ public class Server {
           else if (message[1].equals("list")) {
             for (User u : users) {
               if (u.username.equals(message[0])) {
-                String list = "friends:";
+                String list = "Friends:";
 
                 for (User u2 : u.friends) {
                   list += " " + u2.username;
