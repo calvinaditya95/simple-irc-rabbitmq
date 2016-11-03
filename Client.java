@@ -54,7 +54,7 @@ public class Client {
 			@Override
 			public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws java.io.IOException {
 				String message = new String(body, "UTF-8");
-				System.out.println(" [x] Received '" + message + "'");
+				System.out.println(" [x] " + message);
 				processMessage(message);
 			}
 	    };
@@ -188,6 +188,7 @@ public class Client {
 					payload = in.nextLine();
 					if (payload.equals("-exit")) {
 						System.out.println("You left " + this.target + " chatroom");
+						System.out.println();
 						this.target = "home";
 						startChat = false;
 					}
@@ -210,13 +211,14 @@ public class Client {
 	private void helpMessage() {
 		System.out.println("Available commands:");
 		System.out.println("register \t\t untuk meregister user");
-		System.out.println("login \t\t untuk login user");
+		System.out.println("login \t\t\t\t untuk login user");
 		System.out.println("chat <username> \t\t untuk memulai mengirim chat ke <username>");
 		System.out.println("create <group-name> \t\t untuk membuat sebuah grup baru");
 		System.out.println("enter <group-name> \t\t untuk memulai mengirim chat ke <group-name>");
-		System.out.println("add <username> \t\t untuk memasukkan <username> ke suatu grup");
+		System.out.println("add <username> \t\t\t untuk memasukkan <username> ke suatu grup");
 		System.out.println("leave <group-name> \t\t untuk meninggalkan grup <group-name>");
 		System.out.println("friend <username> \t\t untuk menambah teman");
+		System.out.println("help \t\t\t\t untuk menampilkan daftar commands");
 		System.out.println();
 	}
 
@@ -224,14 +226,12 @@ public class Client {
 		String[] splittedMessage = message.split("\\s+");
 		String groupName;
 		switch (splittedMessage[0]) {
-			case "joined" :
+			case "Joined" :
 				groupName = splittedMessage[1];
-				System.out.println("You have joined " + groupName);
 				groups.add(groupName);
 				break;
-			case "left" :
+			case "Left" :
 				groupName = splittedMessage[1];
-				System.out.println("You have left " + groupName);
 				groups.remove(groupName);
 				break;
 			default :
