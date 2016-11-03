@@ -129,7 +129,7 @@ public class Server {
                   if (u.username.equals(message[3])) {
                     temp.addUser(u);
                     sender.send("Added " + u.username + " to " + temp.name, message[0]);
-                    sender.send("joined " + temp.name, message[3]);
+                    sender.send("Joined " + temp.name, message[3]);
                     break;
                   }
                 }
@@ -149,7 +149,7 @@ public class Server {
                 for (User u : g.members) {
                   if (u.username.equals(message[0])) {
                     g.removeUser(u);
-                    sender.send("left " + g.name, message[0]);
+                    sender.send("Left " + g.name, message[0]);
                     break;
                   }
                 }
@@ -169,8 +169,8 @@ public class Server {
                   if (u2.username.equals(message[2])) {
                     temp.friends.add(u2);
                     u2.friends.add(temp);
-                    sender.send("befriend " + u2.username, message[0]);
-                    sender.send("befriend " + temp.username, message[2]);
+                    sender.send("Added " + u2.username + " as friend", message[0]);
+                    sender.send("Added " + temp.username + "as friend", message[2]);
                     break;
                   }
                 }
