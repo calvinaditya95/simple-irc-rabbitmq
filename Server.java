@@ -267,7 +267,13 @@ public class Server {
         @Override
         public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
           String[] message = new String(body, "UTF-8").split("\\s+");
-          register(message[0], message[1], channel);
+
+          if (message[0].equals("register")) {
+            register(message[1], message[2], channel);
+          }
+          else if (message[0].equals("login")) {
+            login(message[1], message[2], channel);
+          }
         }
       };
       
