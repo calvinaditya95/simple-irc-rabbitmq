@@ -22,7 +22,7 @@ public class Send implements Runnable {
 
 	public void sendToGroup(String payload, String exchange_name) throws java.io.IOException {
 		String message = payload;
-		channel.basicPublish(exchange_name, "info", null, message.getBytes());
+		channel.basicPublish(exchange_name, "", null, message.getBytes());
 	}
 
 	@Override

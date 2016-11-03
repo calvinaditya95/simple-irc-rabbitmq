@@ -14,11 +14,20 @@ class User {
   public String username;
   public String password;
   public ArrayList<User> friends;
+  public Channel channel;
 
-  public User(String username, String password) {
+  public User(String username, String password, Channel channel) {
     this.username = username;
     this.password = password;
     friends = new ArrayList<>();
+
+    try {
+      channel.queueDeclare(username, false, false, false, null);
+    }
+    catch (IOException e) {
+      System.out.println(e);
+    }
+
     System.out.println("Registered user: " + username);
   }
 }
@@ -35,7 +44,7 @@ class Group {
     this.channel = channel;
 
     try {
-      channel.exchangeDeclare(name, "direct");
+      channel.exchangeDeclare(name, "fanout");
     }
     catch (IOException e) {
       System.out.println(e);
@@ -48,7 +57,7 @@ class Group {
     members.add(u);
     
     try {
-      channel.queueBind(u.username, name, "group");
+      channel.queueBind(u.username, name, "");
     }
     catch(IOException e) {
       System.out.println(e);
@@ -68,8 +77,8 @@ public class Server {
   private static String SERVER = "serverQueue";
   private static String REGISTER = "registerQueue";
 
-  public static void register(String username, String password) {
-    User temp = new User(username, password);
+  public static void register(String username, String password, Channel channel) {
+    User temp = new User(username, password, channel);
     users.add(temp);
   }
 
@@ -200,7 +209,7 @@ public class Server {
         @Override
         public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
           String[] message = new String(body, "UTF-8").split("\\s+");
-          register(message[0], message[1]);
+          register(message[0], message[1], channel);
         }
       };
       
