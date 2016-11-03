@@ -187,11 +187,11 @@ public class Server {
           }
           // private message
           else if (message[1].equals("send")) {
-            sender.send(message[0] + message[3], message[2]);
+            sender.send(message[0] + ": \"" + message[3] + "\"", message[2]);
           }
           // group message
           else if (message[1].equals("broadcast")) {
-            sender.sendToGroup(message[2] + " " + message[0] + " " + message[3], message[2]);
+            sender.sendToGroup(message[0] + " in " + message[2] + ": \"" + message[3] + "\"", message[2]);
           }
         }
       };
