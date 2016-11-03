@@ -7,6 +7,7 @@ import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Envelope;
 import java.util.Scanner;
 import java.util.ArrayList;
+import java.lang.Thread;
 
 public class Client {
 	private final static String SERVER_QUEUE_NAME = "serverQueue";
@@ -19,7 +20,7 @@ public class Client {
 	private boolean loggedIn = false;
 	private ArrayList<String> groups = new ArrayList<String>();
 
-	public Client() throws java.io.IOException, java.util.concurrent.TimeoutException {
+	public Client() throws java.io.IOException, java.util.concurrent.TimeoutException, java.lang.InterruptedException {
 		this.sender = new Send();
 		Thread senderThread = new Thread(this.sender, "Sender Thread");
 		senderThread.start();
@@ -37,36 +38,33 @@ public class Client {
 		Connection connection = factory.newConnection();
 		Channel channel = connection.createChannel();
 
-        while(!this.loggedIn) {
+  	while(!this.loggedIn) {
 			input = in.nextLine();
 			switch(input) {
 				case "register" :
 					System.out.println("Enter Username:");
-			        this.username = in.nextLine();
-			        System.out.println("Enter Password:");
-			        this.password = in.nextLine();
-			        startReceive(channel);
+	        this.username = in.nextLine();
+	        System.out.println("Enter Password:");
+	        this.password = in.nextLine();
+	        startReceive(channel);
 					this.sender.send("register " + this.username + " " + this.password, REGISTER_QUEUE_NAME);
 					break;
 				case "login" :
 					System.out.println("Enter Username:");
-			        this.username = in.nextLine();
-			        System.out.println("Enter Password:");
-			        this.password = in.nextLine();
-			        startReceive(channel);
-			        this.sender.send("login " + this.username + " " + this.password, REGISTER_QUEUE_NAME);
+	        this.username = in.nextLine();
+	        System.out.println("Enter Password:");
+	        this.password = in.nextLine();
+	        startReceive(channel);
+	        this.sender.send("login " + this.username + " " + this.password, REGISTER_QUEUE_NAME);
 					break;
 			}
 
-			while(true) {
-				if (this.loggedIn) {
-					this.loggedIn = true;
-					break;
-				}
+			while(!this.loggedIn) {
+				Thread.sleep(1);
 			}
-        }
+    }
 
-        helpMessage();
+    helpMessage();
 
 		while(on) {
 	        input = in.nextLine();
@@ -274,7 +272,7 @@ public class Client {
 		}
 	}
 
-	public static void main(String[] args) throws java.io.IOException, java.util.concurrent.TimeoutException {
+	public static void main(String[] args) throws java.io.IOException, java.util.concurrent.TimeoutException, java.lang.InterruptedException {
 	    Client client = new Client();
 	}
 }

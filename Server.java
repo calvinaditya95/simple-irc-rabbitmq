@@ -28,8 +28,6 @@ class User {
     catch (IOException e) {
       System.out.println(e);
     }
-
-    System.out.println("Registered user: " + username);
   }
 }
 
@@ -75,19 +73,14 @@ public class Server {
   private static ArrayList<User> users = new ArrayList<>();
   private static ArrayList<Group> groups = new ArrayList<>();
   private static DBConnection dbConn = new DBConnection();
-  private static Connection conn;
+  private static java.sql.Connection conn;
 
   private static String SERVER = "serverQueue";
   private static String REGISTER = "registerQueue";
 
-  public Server() {
-    dbConn.init();
-    conn = dbConn.getConnection();
-  }
-
-  public static void register(String username, String password, Channel channel) {
+  public static void register(String username, String password, Channel channel) throws IOException, SQLException {
     Statement stmt = conn.createStatement();
-    String sql = "SELECT COUNT(*) as n FROM account WHERE username = " + username;
+    String sql = "SELECT COUNT(*) as n FROM account WHERE username = \"" + username + "\"";
     ResultSet rs = stmt.executeQuery(sql);
     int n = -1;
 
@@ -100,27 +93,25 @@ public class Server {
       channel.basicPublish("", username, null, message.getBytes());
     }
     else if (n == 0) {
-      sql = "INSERT INTO account(username, password) VALUES (" + username + ", " + password + ")";
+      sql = "INSERT INTO account(username, password) VALUES (\"" + username + "\", \"" + password + "\")";
 
-      if (stmt.executeUpdate(sql)) {
-        User temp = new User(username, password, channel);
-        users.add(temp);
-        System.out.println("Registered new user: " + username);
+      stmt.executeUpdate(sql);
+      User temp = new User(username, password, channel);
+      users.add(temp);
 
-        String message = "Success";
-        channel.basicPublish("", username, null, message.getBytes()); 
-      }
+      String message = "Success";
+      channel.basicPublish("", username, null, message.getBytes()); 
+
+      System.out.println("Registered new user: " + username);
     }
     else {
       System.out.println("Registration error");
     }
-
-    conn.close();
   }
 
-  public static void login(String username, String password, Channel channel) {
+  public static void login(String username, String password, Channel channel) throws IOException, SQLException {
     Statement stmt = conn.createStatement();
-    String sql = "SELECT COUNT(*) as n FROM account WHERE username = " + username + " AND password = " + password;
+    String sql = "SELECT COUNT(*) as n FROM account WHERE username = \"" + username + "\" AND password = \"" + password + "\"";
     ResultSet rs = stmt.executeQuery(sql);
     int n = 0;
 
@@ -131,17 +122,21 @@ public class Server {
     if (n > 0) {
       String message = "Success";
       channel.basicPublish("", username, null, message.getBytes());
+      users.add(new User(username, password, channel));
+
+      System.out.println("Logged in: " + username);
     }
     else {
       String message = "Failed";
       channel.basicPublish("", username, null, message.getBytes());
     }
-
-    conn.close();
   }
 
   public static void main(String[] args) {
     try {
+      dbConn.init();
+      conn = dbConn.getConnection();
+
       sender = new Send();
       Thread senderThread = new Thread(sender);
       senderThread.start();
@@ -198,15 +193,14 @@ public class Server {
           }
           // user leaving a group
           else if (message[1].equals("leave")) {
-            Group temp;
-            User toBeRemoved;
-
             for (Group g : groups) {
               if (g.name.equals(message[2])) {
 
                 for (User u : g.members) {
                   if (u.username.equals(message[0])) {
                     g.removeUser(u);
+                    channel.queueUnbind(u.username, g.name, "");
+                    sender.sendToGroup(u.username + " left " + g.name, message[2]);
                     sender.send("Left " + g.name, message[0]);
                     break;
                   }
@@ -268,11 +262,16 @@ public class Server {
         public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
           String[] message = new String(body, "UTF-8").split("\\s+");
 
-          if (message[0].equals("register")) {
-            register(message[1], message[2], channel);
+          try {
+            if (message[0].equals("register")) {
+              register(message[1], message[2], channel);
+            }
+            else if (message[0].equals("login")) {
+              login(message[1], message[2], channel);
+            }
           }
-          else if (message[0].equals("login")) {
-            login(message[1], message[2], channel);
+          catch (SQLException e) {
+            System.out.println(e);
           }
         }
       };
