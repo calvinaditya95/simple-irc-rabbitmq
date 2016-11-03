@@ -11,12 +11,12 @@ import java.util.ArrayList;
 public class Client {
 	private final static String SERVER_QUEUE_NAME = "serverQueue";
 	private final static String REGISTER_QUEUE_NAME = "registerQueue";
-	private final static String LOGIN_QUEUE_NAME = "loginQueue";
 	private String username;
 	private String password;
 	private String target = "home";
 	private Send sender;
 	private boolean on = true;
+	private boolean loggedIn = false;
 	private ArrayList<String> groups = new ArrayList<String>();
 
 	public Client() throws java.io.IOException, java.util.concurrent.TimeoutException {
@@ -24,31 +24,61 @@ public class Client {
 		Thread senderThread = new Thread(this.sender, "Sender Thread");
 		senderThread.start();
 
-		System.out.println("Enter Username:");
 		Scanner in = new Scanner(System.in);
-        this.username = in.nextLine();
-        System.out.println("Enter Password:");
-        this.password = in.nextLine();
-
-        startReceive();
-
-        helpMessage();
-
-		while(on) {
-	        String input;
-	        input = in.nextLine();
-	        processInput(input);
-		}
-	}
-
-	private void startReceive() throws java.io.IOException, java.util.concurrent.TimeoutException {
+		String input;
+		
+		System.out.println();
+		System.out.println("Command List: ");
+		System.out.println("register \t\t untuk meregister user");
+		System.out.println("login \t\t\t untuk login user");
+        
 		ConnectionFactory factory = new ConnectionFactory();
 		factory.setHost("localhost");
 		Connection connection = factory.newConnection();
 		Channel channel = connection.createChannel();
 
+        while(!this.loggedIn) {
+			input = in.nextLine();
+			switch(input) {
+				case "register" :
+					System.out.println("Enter Username:");
+			        this.username = in.nextLine();
+			        System.out.println("Enter Password:");
+			        this.password = in.nextLine();
+			        startReceive(channel);
+					this.sender.send("register " + this.username + " " + this.password, REGISTER_QUEUE_NAME);
+					break;
+				case "login" :
+					System.out.println("Enter Username:");
+			        this.username = in.nextLine();
+			        System.out.println("Enter Password:");
+			        this.password = in.nextLine();
+			        startReceive(channel);
+			        this.sender.send("login " + this.username + " " + this.password, REGISTER_QUEUE_NAME);
+					break;
+			}
+
+			while(true) {
+				if (this.loggedIn) {
+					this.loggedIn = true;
+					break;
+				}
+			}
+        }
+
+        helpMessage();
+
+		while(on) {
+	        input = in.nextLine();
+	        processInput(input);
+		}
+	}
+
+	private void startReceive(Channel channel) throws java.io.IOException, java.util.concurrent.TimeoutException {
+		
 		channel.queueDeclare(username, false, false, false, null);
 		System.out.println(" [*] Waiting for messages. To exit press CTRL+C");
+		System.out.println();
 		
 		Consumer consumer = new DefaultConsumer(channel) {
 			@Override
@@ -69,12 +99,6 @@ public class Client {
 		String targetGroup;
 		Scanner in = new Scanner(System.in);
 		switch (splittedCommand[0]) {
-			case "register" : 
-				this.sender.send(this.username + " " + this.password, REGISTER_QUEUE_NAME);
-				break;
-			case "login" :
-				this.sender.send(this.username + " " + this.password, LOGIN_QUEUE_NAME);
-				break;
 			case "chat" :
 				boolean startChat = false;
 				targetUser = splittedCommand[1];
@@ -210,8 +234,6 @@ public class Client {
 
 	private void helpMessage() {
 		System.out.println("Available commands:");
-		System.out.println("register \t\t untuk meregister user");
-		System.out.println("login \t\t\t\t untuk login user");
 		System.out.println("chat <username> \t\t untuk memulai mengirim chat ke <username>");
 		System.out.println("create <group-name> \t\t untuk membuat sebuah grup baru");
 		System.out.println("enter <group-name> \t\t untuk memulai mengirim chat ke <group-name>");
@@ -233,6 +255,9 @@ public class Client {
 			case "Left" :
 				groupName = splittedMessage[1];
 				groups.remove(groupName);
+				break;
+			case "Success" :
+				this.loggedIn = true;
 				break;
 			default :
 				break;
